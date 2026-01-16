@@ -415,7 +415,7 @@ class GrocyChoresCard extends LitElement {
         return html`
             <mwc-button class="hide-button" @click=${() => this._toggleAddTask()}>
                 <ha-icon icon="mdi:chevron-down" id="add-task-icon"></ha-icon>
-                ${this._translate("Add task")}
+                ${this._translate("Add tas033")}
             </mwc-button>
         `
     }

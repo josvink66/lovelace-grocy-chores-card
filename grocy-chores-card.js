@@ -911,47 +911,42 @@ class GrocyChoresCard extends LitElement {
 
 		/* Header */
 		const header = document.createElement("ha-dialog-header");
-		header.innerHTML = `
-		  <span slot="title">${title}</span>
-		`;
+		header.innerHTML = `<span slot="title">${title}</span>`;
 		dialog.appendChild(header);
 
 		/* Content */
 		const content = document.createElement("div");
-		content.style.padding = "16px 24px 0 24px";
+		content.style.padding = "16px 24px 16px 24px";
+		content.style.display = "flex";
+		content.style.flexDirection = "column";
+		content.style.gap = "12px";
 		content.style.color = "var(--primary-text-color)";
 		content.innerHTML = `<p style="margin:0;">${message}</p>`;
 		dialog.appendChild(content);
 
 		/* Buttons */
-		const cancelButton = document.createElement("ha-button");
-		cancelButton.slot = "primaryAction";
-		cancelButton.setAttribute("appearance", "plain");
-		cancelButton.textContent = this._translate("No");
-		cancelButton.addEventListener("click", () => {
-		  dialog.open = false;
-		  resolve(false);
-		});
-
 		const confirmButton = document.createElement("ha-button");
-		confirmButton.slot = "primaryAction";
-		confirmButton.setAttribute("appearance", "accent");
-		confirmButton.setAttribute("dialogInitialFocus", "");
 		confirmButton.textContent = this._translate("Yes");
+		confirmButton.setAttribute("appearance", "accent");
 		confirmButton.addEventListener("click", () => {
 		  dialog.open = false;
 		  resolve(true);
 		});
+		content.appendChild(confirmButton);
 
-		dialog.appendChild(cancelButton);
-		dialog.appendChild(confirmButton);
+		const cancelButton = document.createElement("ha-button");
+		cancelButton.textContent = this._translate("No");
+		cancelButton.setAttribute("appearance", "plain");
+		cancelButton.addEventListener("click", () => {
+		  dialog.open = false;
+		  resolve(false);
+		});
+		content.appendChild(cancelButton);
 
 		dialog.addEventListener("closed", () => dialog.remove());
-
 		document.body.appendChild(dialog);
 	  });
 	}
-
 
     async _openRescheduleDialog(item) {
         await this.loadRescheduleElements();

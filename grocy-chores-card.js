@@ -841,50 +841,50 @@ class GrocyChoresCard extends LitElement {
 	
 	async _confirmDialog(title, message) {
 		return new Promise((resolve) => {
-			// Create the dialog
+			// Create dialog element
 			const dialog = document.createElement('ha-dialog');
 			dialog.heading = title;
-			dialog.innerHTML = `<div>${message}</div>`;
 
-			// Primary (confirm) button
-			const confirmButton = document.createElement('ha-button');
-			confirmButton.slot = 'primaryAction';
-			confirmButton.setAttribute('raised', '');
-			confirmButton.textContent = this._translate("Yes");
-			confirmButton.addEventListener('click', () => {
+			// Add some padding & max-width for nicer look
+			const content = document.createElement('div');
+			content.style.padding = "16px";
+			content.style.maxWidth = "400px";
+			content.style.lineHeight = "1.5";
+			content.innerHTML = `<p>${message}</p>`;
+			dialog.appendChild(content);
+
+			// Primary (Yes) button
+			const yesButton = document.createElement('ha-button');
+			yesButton.slot = 'primaryAction';
+			yesButton.setAttribute('raised', '');
+			yesButton.textContent = this._translate("Yes");
+			yesButton.addEventListener('click', () => {
 				dialog.open = false;
 				resolve(true);
 			});
 
-			// Secondary (dismiss) button
-			const dismissButton = document.createElement('ha-button');
-			dismissButton.slot = 'secondaryAction';
-			dismissButton.setAttribute('outlined', '');
-			dismissButton.textContent = this._translate("No");
-			dismissButton.addEventListener('click', () => {
+			// Secondary (No) button
+			const noButton = document.createElement('ha-button');
+			noButton.slot = 'secondaryAction';
+			noButton.setAttribute('outlined', '');
+			noButton.textContent = this._translate("No");
+			noButton.addEventListener('click', () => {
 				dialog.open = false;
 				resolve(false);
 			});
 
-			// Append buttons to dialog
-			dialog.appendChild(confirmButton);
-			dialog.appendChild(dismissButton);
+			dialog.appendChild(yesButton);
+			dialog.appendChild(noButton);
 
-			// Remove dialog from DOM when closed
 			dialog.addEventListener('closed', () => {
 				dialog.remove();
 			});
 
-			// Append to the main HA container (so it appears centered)
-			const haContainer = document.querySelector("home-assistant") || document.body;
-			haContainer.appendChild(dialog);
-
-			// Open the dialog
+			// Append to body
+			document.body.appendChild(dialog);
 			dialog.open = true;
 		});
 	}
-
-
 
     async _openRescheduleDialog(item) {
         await this.loadRescheduleElements();

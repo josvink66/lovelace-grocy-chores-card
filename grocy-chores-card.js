@@ -825,13 +825,13 @@ class GrocyChoresCard extends LitElement {
 			container.style.marginTop = "16px";
 
 			// Haal de users uit de kaartconfig, behalve "default"
-			const users = Object.entries(this.userId ?? {})
-				.filter(([key]) => key !== "default");
+			const users = Object.entries(this.userId ?? {}).filter(([key]) => key !== "default");
 
+			// Voeg een button per gebruiker toe
 			users.forEach(([name, id]) => {
 				const btn = document.createElement('ha-button');
 				btn.textContent = name;
-				btn.setAttribute('raised', '');
+				btn.setAttribute('raised', ''); // primary style
 				btn.addEventListener('click', () => {
 					dialog.open = false;
 					resolve(id);
@@ -842,7 +842,9 @@ class GrocyChoresCard extends LitElement {
 			// Cancel button
 			const cancelBtn = document.createElement('ha-button');
 			cancelBtn.textContent = this._translate("Cancel");
-			cancelBtn.setAttribute('outlined', '');
+			cancelBtn.setAttribute('raised', ''); // kan ook outlined of appearance="secondary" 
+			cancelBtn.style.backgroundColor = "var(--secondary-background-color)"; // extra kleur
+			cancelBtn.style.color = "var(--primary-text-color)";
 			cancelBtn.addEventListener('click', () => {
 				dialog.open = false;
 				resolve(null);

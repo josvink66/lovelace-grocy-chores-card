@@ -4,70 +4,7 @@ import style from './style.js';
 
 class GrocyChoresCard extends LitElement {
 	
-	 static properties = {
-        config: { type: Object },
-        _rescheduleDialogOpen: { type: Boolean },
-        _rescheduleItem: { type: Object },
-        _rescheduleDate: { type: String },
-        _rescheduleTime: { type: String },
-        local_cached_hidden_items: { type: Array },
-        confirm_track: { type: Boolean },
-        _confirmOpen: { type: Boolean },
-        _confirmMessage: { type: String },
-        _confirmCallback: { type: Function }
-    };
-
-    constructor() {
-        super();
-        this.local_cached_hidden_items = [];
-        this._rescheduleDialogOpen = false;
-        this._rescheduleItem = null;
-        this._rescheduleDate = null;
-        this._rescheduleTime = null;
-        this.confirm_track = false;
-        this._confirmOpen = false;
-        this._confirmMessage = '';
-        this._confirmCallback = null;
-    }
 	
-	_requestConfirm(message) {
-        return new Promise((resolve) => {
-            this._confirmMessage = message;
-            this._confirmCallback = resolve;
-            this._confirmOpen = true;
-            this.requestUpdate();
-        });
-    }
-
-    _handleConfirm(result) {
-        this._confirmOpen = false;
-        if (this._confirmCallback) {
-            this._confirmCallback(result);
-            this._confirmCallback = null;
-        }
-    }
-
-    _renderConfirmDialog() {
-        return html`
-            <ha-dialog
-                .open=${this._confirmOpen}
-                @closed=${() => this._handleConfirm(false)}>
-                <div>${this._confirmMessage}</div>
-                <ha-button
-                    slot="primaryAction"
-                    @click=${() => this._handleConfirm(true)}
-                    raised>
-                    ${this._translate("Yes")}
-                </ha-button>
-                <ha-button
-                    slot="secondaryAction"
-                    @click=${() => this._handleConfirm(false)}
-                    outlined>
-                    ${this._translate("No")}
-                </ha-button>
-            </ha-dialog>
-        `;
-    }
 
     async loadCustomCreateTaskElements() {
         if(!customElements.get("ha-date-input") || !customElements.get("ha-textfield")) {
@@ -327,7 +264,6 @@ class GrocyChoresCard extends LitElement {
                     ${this.overflow && this.overflow.length > 0 ? this._renderOverflow() : nothing}
                 </ha-card>`}
             ${this.show_enable_reschedule ? this._renderRescheduleDialog() : nothing}
-			${this._renderConfirmDialog()}
         `;
     }
 
@@ -524,22 +460,36 @@ class GrocyChoresCard extends LitElement {
 	}
 	
 	async _confirmAndTrackChore(item) {
-        if (!this.confirm_track) {
-            this._trackChore(item);
-            return;
-        }
-        const ok = await this._requestConfirm(this._translate("Are you sure you want to track this chore?"));
-        if (ok) this._trackChore(item);
-    }
+		if (!this.confirm_track) {
+			this._trackChore(item);
+			return;
+		}
 
-    async _confirmAndTrackTask(item) {
-        if (!this.confirm_track) {
-            this._trackTask(item.id, item.name);
-            return;
-        }
-        const ok = await this._requestConfirm(this._translate("Are you sure you want to track this task?"));
-        if (ok) this._trackTask(item.id, item.name);
-    }
+		const result = await this._confirmDialog(
+			this._translate("Confirm"),
+			this._translate("Are you sure you want to track this chore?")
+		);
+
+		if (result) {
+			this._trackChore(item);
+		}
+	}
+
+	async _confirmAndTrackTask(item) {
+		if (!this.confirm_track) {
+			this._trackTask(item.id, item.name);
+			return;
+		}
+
+		const result = await this._confirmDialog(
+			this._translate("Confirm"),
+			this._translate("Are you sure you want to track this task?")
+		);
+
+		if (result) {
+			this._trackTask(item.id, item.name);
+		}
+	}
 
     _renderRescheduleButton(item) {
         const shouldUseIcon = this.use_icons !== false;

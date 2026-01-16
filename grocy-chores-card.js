@@ -547,15 +547,35 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackTaskButton(item) {
+		let pressTimer;
+
+		const startPress = (ev) => {
+			ev.preventDefault(); // voorkomt selectie etc
+			pressTimer = setTimeout(async () => {
+				const userId = await this._selectUserDialog();
+				if (!userId) return;
+				this._trackTask(item.id, item.name, userId);
+			}, 600); // 600ms threshold voor long-press
+		};
+
+		const cancelPress = () => {
+			clearTimeout(pressTimer);
+		};
+
 		return html`
 		  <mwc-icon-button
-			@click=${() => this._confirmAndTrackTask(item)}
-			@contextmenu=${(e) => this._selectAndTrackTask(e, item)}
+			@mousedown=${startPress}
+			@touchstart=${startPress}
+			@mouseup=${cancelPress}
+			@touchend=${cancelPress}
+			@mouseleave=${cancelPress}
+			@click=${() => this._trackTask(item.id, item.name)}
 		  >
 			<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
 		  </mwc-icon-button>
 		`;
 	}
+
 	
 	async _selectAndTrackTask(ev, item) {
 		ev.preventDefault();

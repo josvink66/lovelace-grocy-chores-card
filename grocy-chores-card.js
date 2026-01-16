@@ -415,7 +415,7 @@ class GrocyChoresCard extends LitElement {
         return html`
             <mwc-button class="hide-button" @click=${() => this._toggleAddTask()}>
                 <ha-icon icon="mdi:chevron-down" id="add-task-icon"></ha-icon>
-                ${this._translate("Add tas033")}
+                ${this._translate("Add task")}
             </mwc-button>
         `
     }
@@ -447,24 +447,47 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackChoreButton(item) {
-        if (this.chore_icon != null) {
-            return html`
-                <mwc-icon-button class="track-button"
-                                 .label=${this._translate("Track")}
-                                 @click=${() => this._trackChore(item)}>
-                    <ha-icon class="track-button-icon" style="--mdc-icon-size: ${this.chore_icon_size}px;"
-                             .icon=${this.chore_icon}></ha-icon>
-                </mwc-icon-button>
-            `
-        }
+		if (this.chore_icon != null) {
+			return html`
+				<mwc-icon-button @click=${() => this._confirmAndTrackChore(item)}>
+					<ha-icon .icon=${this.chore_icon} style="--mdc-icon-size: ${this.chore_icon_size}px;"></ha-icon>
+				</mwc-icon-button>
+			`;
+		}
+		return html`<mwc-button @click=${() => this._confirmAndTrackChore(item)}>${this._translate("Track")}</mwc-button>`;
+	}
+	
+	async _confirmAndTrackChore(item) {
+		if (!this.confirm_track) {
+			this._trackChore(item);
+			return;
+		}
 
-        return html`
-            <mwc-button
-                    @click=${() => this._trackChore(item)}>
-                ${this._translate("Track")}
-            </mwc-button>
-        `
-    }
+		const result = await this._confirmDialog(
+			this._translate("Confirm"),
+			this._translate("Are you sure you want to track this chore?")
+		);
+
+		if (result) {
+			this._trackChore(item);
+		}
+	}
+
+	async _confirmAndTrackTask(item) {
+		if (!this.confirm_track) {
+			this._trackTask(item.id, item.name);
+			return;
+		}
+
+		const result = await this._confirmDialog(
+			this._translate("Confirm"),
+			this._translate("Are you sure you want to track this task?")
+		);
+
+		if (result) {
+			this._trackTask(item.id, item.name);
+		}
+	}
 
     _renderRescheduleButton(item) {
         const shouldUseIcon = this.use_icons !== false;
@@ -513,23 +536,15 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackTaskButton(item) {
-        if (this.task_icon != null) {
-            return html`
-                <mwc-icon-button class="track-checkbox"
-                                 .label=${this._translate("Track")} @click=${() => this._trackTask(item.id, item.name)}>
-                    <ha-icon class="track-button-icon" style="--mdc-icon-size: ${this.task_icon_size}px;"
-                             .icon=${this.task_icon}></ha-icon>
-                </mwc-icon-button>
-            `
-        }
-
-        return html`
-            <mwc-button
-                    @click=${() => this._trackTask(item.id, item.name)}>
-                ${this._translate("Track")}
-            </mwc-button>
-        `
-    }
+		if (this.task_icon != null) {
+			return html`
+				<mwc-icon-button @click=${() => this._confirmAndTrackTask(item)}>
+					<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
+				</mwc-icon-button>
+			`;
+		}
+		return html`<mwc-button @click=${() => this._confirmAndTrackTask(item)}>${this._translate("Track")}</mwc-button>`;
+	}
 
     _calculateDaysTillNow(date) {
         const now = DateTime.now();
@@ -821,6 +836,46 @@ class GrocyChoresCard extends LitElement {
         });
         this._showTrackedToast(taskName);
     }
+	
+	async _confirmDialog(title, message) {
+		return new Promise((resolve) => {
+			// Create dialog element
+			const dialog = document.createElement('ha-dialog');
+			dialog.heading = title;
+			dialog.innerHTML = `<p>${message}</p>`;
+
+			// Primary (Yes) button
+			const yesButton = document.createElement('ha-button');
+			yesButton.slot = 'primaryAction';
+			yesButton.setAttribute('raised', '');
+			yesButton.textContent = this._translate("Yes");
+			yesButton.addEventListener('click', () => {
+				dialog.open = false;
+				resolve(true);
+			});
+
+			// Secondary (No) button
+			const noButton = document.createElement('ha-button');
+			noButton.slot = 'secondaryAction';
+			noButton.setAttribute('outlined', '');
+			noButton.textContent = this._translate("No");
+			noButton.addEventListener('click', () => {
+				dialog.open = false;
+				resolve(false);
+			});
+
+			dialog.appendChild(yesButton);
+			dialog.appendChild(noButton);
+
+			dialog.addEventListener('closed', () => {
+				dialog.remove();
+			});
+
+			document.body.appendChild(dialog);
+			dialog.open = true;
+		});
+	}
+
 
     async _openRescheduleDialog(item) {
         await this.loadRescheduleElements();
@@ -1416,6 +1471,8 @@ class GrocyChoresCard extends LitElement {
         this.show_unassigned = this.config.show_unassigned ?? false;
         this.show_enable_reschedule = this.config.show_enable_reschedule ?? false;
         this.show_skip_next = this.config.show_skip_next ?? false;
+		// JV: Add confirm track option
+		this.confirm_track = this.config.confirm_track ?? false;
         if (this.use_icons) {
             this.task_icon = this.config.task_icon || 'mdi:checkbox-blank-outline';
             this.chore_icon = this.config.chore_icon || 'mdi:check-circle-outline';

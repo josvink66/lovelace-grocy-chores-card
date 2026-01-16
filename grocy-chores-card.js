@@ -449,14 +449,23 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackChoreButton(item) {
-		if (this.chore_icon != null) {
-			return html`
-				<mwc-icon-button @click=${() => this._confirmAndTrackChore(item)}>
-					<ha-icon .icon=${this.chore_icon} style="--mdc-icon-size: ${this.chore_icon_size}px;"></ha-icon>
-				</mwc-icon-button>
-			`;
-		}
-		return html`<mwc-button @click=${() => this._confirmAndTrackChore(item)}>${this._translate("Track")}</mwc-button>`;
+	  return html`
+		<mwc-icon-button
+		  @click=${() => this._confirmAndTrackChore(item)}
+		  @contextmenu=${(e) => this._selectAndTrackChore(e, item)}
+		>
+		  <ha-icon .icon=${this.chore_icon}></ha-icon>
+		</mwc-icon-button>
+	  `;
+	}
+	
+	async _selectAndTrackChore(ev, item) {
+	  ev.preventDefault();
+
+	  const userId = await this._selectUserDialog();
+	  if (!userId) return;
+
+	  this._trackChore(item, userId);
 	}
 	
 	async _confirmAndTrackChore(item) {
@@ -538,14 +547,23 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackTaskButton(item) {
-		if (this.task_icon != null) {
-			return html`
-				<mwc-icon-button @click=${() => this._confirmAndTrackTask(item)}>
-					<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
-				</mwc-icon-button>
-			`;
-		}
-		return html`<mwc-button @click=${() => this._confirmAndTrackTask(item)}>${this._translate("Track")}</mwc-button>`;
+		return html`
+		  <mwc-icon-button
+			@click=${() => this._confirmAndTrackTask(item)}
+			@contextmenu=${(e) => this._selectAndTrackTask(e, item)}
+		  >
+			<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
+		  </mwc-icon-button>
+		`;
+	}
+	
+	async _selectAndTrackTask(ev, item) {
+		ev.preventDefault();
+
+		const userId = await this._selectUserDialog();
+		if (!userId) return;
+
+		this._trackTask(item, userId);
 	}
 
     _calculateDaysTillNow(date) {
@@ -802,42 +820,105 @@ class GrocyChoresCard extends LitElement {
             return this.userId ?? 1;
         }
     }
+	
+	async _selectUserDialog() {
+	  const users = Object.entries(this.userId ?? {})
+		.filter(([key]) => key !== "default");
 
-    _trackChore(item) {
-        // Hide the chore on the next render, for better visual feedback
-        this.local_cached_hidden_items.push(`chore${item.id}`);
-        this.requestUpdate();
-        
-        // Determine user ID: if filter_user is enabled, chore is unassigned, and filter_user is a single value, use it
-        let userId;
-        if (this.filter_user !== undefined && this._isUnassigned(item)) {
-            // Check if filter_user is a single value (not an array)
-            if (!Array.isArray(this.filter_user)) {
-                // Single value - use it (handle "current" special case)
-                userId = this.filter_user === "current" ? this._getUserId() : this.filter_user;
-            } else {
-                // It's an array, use normal logic
-                userId = this._getUserId();
-            }
-        } else {
-            userId = this._getUserId();
-        }
-        
-        this._hass.callService("grocy", "execute_chore", {
-            chore_id: item.id, done_by: userId
-        });
-        this._showTrackedToast(item.name);
-    }
+	  if (!users.length) {
+		return this._getUserId();
+	  }
 
-    _trackTask(taskId, taskName) {
-        // Hide the task on the next render, for better visual feedback
-        this.local_cached_hidden_items.push(`task${taskId}`);
-        this.requestUpdate();
-        this._hass.callService("grocy", "complete_task", {
-            task_id: taskId
-        });
-        this._showTrackedToast(taskName);
-    }
+	  return new Promise((resolve) => {
+		const dialog = document.createElement("ha-dialog");
+		dialog.open = true;
+
+		const header = document.createElement("ha-dialog-header");
+		header.innerHTML = `<span slot="title">${this._translate("Who completed this?")}</span>`;
+		dialog.appendChild(header);
+
+		const content = document.createElement("div");
+		content.style.padding = "8px 24px";
+
+		users.forEach(([name, id]) => {
+		  const btn = document.createElement("ha-button");
+		  btn.style.display = "block";
+		  btn.style.width = "100%";
+		  btn.style.textAlign = "left";
+		  btn.textContent = name;
+		  btn.addEventListener("click", () => {
+			dialog.open = false;
+			resolve(id);
+		  });
+		  content.appendChild(btn);
+		});
+
+		dialog.appendChild(content);
+
+		dialog.addEventListener("closed", () => {
+		  dialog.remove();
+		  resolve(null);
+		});
+
+		document.body.appendChild(dialog);
+	  });
+	}
+
+    _trackChore(item, overrideUserId = null) {
+		// Hide the chore on the next render, for better visual feedback
+		this.local_cached_hidden_items.push(`chore${item.id}`);
+		this.requestUpdate();
+
+		let userId;
+
+		// 1️⃣ Long-press override has priority
+		if (overrideUserId !== null) {
+			userId = overrideUserId;
+		}
+		// 2️⃣ Existing filter_user logic (unchanged)
+		else if (this.filter_user !== undefined && this._isUnassigned(item)) {
+			if (!Array.isArray(this.filter_user)) {
+				userId = this.filter_user === "current"
+					? this._getUserId()
+					: this.filter_user;
+			} else {
+				userId = this._getUserId();
+			}
+		}
+		// 3️⃣ Default behavior
+		else {
+			userId = this._getUserId();
+		}
+
+		this._hass.callService("grocy", "execute_chore", {
+			chore_id: item.id,
+			done_by: userId
+		});
+
+		this._showTrackedToast(item.name);
+	}
+
+
+    _trackTask(taskId, taskName, overrideUserId = null) {
+		// Hide the task on the next render, for better visual feedback
+		this.local_cached_hidden_items.push(`task${taskId}`);
+		this.requestUpdate();
+
+		// Determine payload
+		const payload = { task_id: taskId };
+
+		// If overrideUserId is provided, include it
+		if (overrideUserId !== null) {
+			payload.done_by = overrideUserId;
+		}
+
+		// Call Grocy service
+		this._hass.callService("grocy", "complete_task", payload);
+
+		// Show toast
+		this._showTrackedToast(taskName);
+	}
+
 	
 	async _confirmDialog(title, message) {
 	  return new Promise((resolve) => {

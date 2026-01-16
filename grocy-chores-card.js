@@ -841,42 +841,34 @@ class GrocyChoresCard extends LitElement {
 	
 	async _confirmDialog(title, message) {
 		return new Promise((resolve) => {
-			// Create dialog element
-			const dialog = document.createElement('ha-dialog');
-			dialog.heading = title;
-			dialog.innerHTML = `<p>${message}</p>`;
+			const dialog = document.createElement("ha-md-dialog");
+			dialog.setAttribute("type", "alert");
+			dialog.innerHTML = `
+				<div slot="headline">${title}</div>
+				<div slot="content"><p>${message}</p></div>
+				<div slot="actions">
+					<ha-button slot="secondaryAction">${this._translate("No")}</ha-button>
+					<ha-button slot="primaryAction" dialoginitialfocus raised>${this._translate("Yes")}</ha-button>
+				</div>
+			`;
 
-			// Primary (Yes) button
-			const yesButton = document.createElement('ha-button');
-			yesButton.slot = 'primaryAction';
-			yesButton.setAttribute('raised', '');
-			yesButton.textContent = this._translate("Yes");
-			yesButton.addEventListener('click', () => {
+			// Buttons
+			const [noBtn, yesBtn] = dialog.querySelectorAll("ha-button");
+			noBtn.addEventListener("click", () => {
+				dialog.open = false;
+				resolve(false);
+			});
+			yesBtn.addEventListener("click", () => {
 				dialog.open = false;
 				resolve(true);
 			});
 
-			// Secondary (No) button
-			const noButton = document.createElement('ha-button');
-			noButton.slot = 'secondaryAction';
-			noButton.setAttribute('outlined', '');
-			noButton.textContent = this._translate("No");
-			noButton.addEventListener('click', () => {
-				dialog.open = false;
-				resolve(false);
-			});
-
-			dialog.appendChild(yesButton);
-			dialog.appendChild(noButton);
-
-			dialog.addEventListener('closed', () => {
-				dialog.remove();
-			});
-
+			dialog.addEventListener("closed", () => dialog.remove());
 			document.body.appendChild(dialog);
 			dialog.open = true;
 		});
 	}
+
 
 
     async _openRescheduleDialog(item) {

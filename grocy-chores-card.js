@@ -843,37 +843,17 @@ class GrocyChoresCard extends LitElement {
 		return new Promise((resolve) => {
 			const dialog = document.createElement("ha-md-dialog");
 			dialog.setAttribute("type", "alert");
+			dialog.innerHTML = `
+				<div slot="headline">${title}</div>
+				<div slot="content"><p>${message}</p></div>
+				<div slot="actions">
+					<ha-button slot="secondaryAction">${this._translate("No")}</ha-button>
+					<ha-button slot="primaryAction" dialoginitialfocus raised>${this._translate("Yes")}</ha-button>
+				</div>
+			`;
 
-			// Slots
-			const headline = document.createElement("div");
-			headline.setAttribute("slot", "headline");
-			headline.textContent = title;
-
-			const content = document.createElement("div");
-			content.setAttribute("slot", "content");
-			content.innerHTML = `<p>${message}</p>`;
-
-			const actions = document.createElement("div");
-			actions.setAttribute("slot", "actions");
-
-			const noBtn = document.createElement("ha-button");
-			noBtn.setAttribute("slot", "secondaryAction");
-			noBtn.textContent = this._translate("No");
-
-			const yesBtn = document.createElement("ha-button");
-			yesBtn.setAttribute("slot", "primaryAction");
-			yesBtn.setAttribute("dialoginitialfocus", "");
-			yesBtn.setAttribute("raised", "");
-			yesBtn.textContent = this._translate("Yes");
-
-			actions.appendChild(noBtn);
-			actions.appendChild(yesBtn);
-
-			dialog.appendChild(headline);
-			dialog.appendChild(content);
-			dialog.appendChild(actions);
-
-			// Events
+			// Buttons
+			const [noBtn, yesBtn] = dialog.querySelectorAll("ha-button");
 			noBtn.addEventListener("click", () => {
 				dialog.open = false;
 				resolve(false);
@@ -882,13 +862,12 @@ class GrocyChoresCard extends LitElement {
 				dialog.open = false;
 				resolve(true);
 			});
-			dialog.addEventListener("closed", () => dialog.remove());
 
-			document.querySelector("home-assistant").appendChild(dialog);
+			dialog.addEventListener("closed", () => dialog.remove());
+			document.body.appendChild(dialog);
 			dialog.open = true;
 		});
 	}
-
 
 
 

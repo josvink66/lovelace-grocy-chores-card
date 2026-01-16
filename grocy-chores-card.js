@@ -547,43 +547,14 @@ class GrocyChoresCard extends LitElement {
     }
 
     _renderTrackTaskButton(item) {
-		let pressTimer;
-
-		const startPress = (ev) => {
-			ev.preventDefault(); // voorkomt selectie etc
-			pressTimer = setTimeout(async () => {
-				const userId = await this._selectUserDialog();
-				if (!userId) return;
-				this._trackTask(item.id, item.name, userId);
-			}, 600); // 600ms threshold voor long-press
-		};
-
-		const cancelPress = () => {
-			clearTimeout(pressTimer);
-		};
-
-		return html`
-		  <mwc-icon-button
-			@mousedown=${startPress}
-			@touchstart=${startPress}
-			@mouseup=${cancelPress}
-			@touchend=${cancelPress}
-			@mouseleave=${cancelPress}
-			@click=${() => this._trackTask(item.id, item.name)}
-		  >
-			<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
-		  </mwc-icon-button>
-		`;
-	}
-
-	
-	async _selectAndTrackTask(ev, item) {
-		ev.preventDefault();
-
-		const userId = await this._selectUserDialog();
-		if (!userId) return;
-
-		this._trackTask(item, userId);
+		if (this.task_icon != null) {
+			return html`
+				<mwc-icon-button @click=${() => this._confirmAndTrackTask(item)}>
+					<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
+				</mwc-icon-button>
+			`;
+		}
+		return html`<mwc-button @click=${() => this._confirmAndTrackTask(item)}>${this._translate("Track")}</mwc-button>`;
 	}
 
     _calculateDaysTillNow(date) {
@@ -919,26 +890,15 @@ class GrocyChoresCard extends LitElement {
 	}
 
 
-    _trackTask(taskId, taskName, overrideUserId = null) {
-		// Hide the task on the next render, for better visual feedback
-		this.local_cached_hidden_items.push(`task${taskId}`);
-		this.requestUpdate();
-
-		// Determine payload
-		const payload = { task_id: taskId };
-
-		// If overrideUserId is provided, include it
-		if (overrideUserId !== null) {
-			payload.done_by = overrideUserId;
-		}
-
-		// Call Grocy service
-		this._hass.callService("grocy", "complete_task", payload);
-
-		// Show toast
-		this._showTrackedToast(taskName);
-	}
-
+    _trackTask(taskId, taskName) {
+        // Hide the task on the next render, for better visual feedback
+        this.local_cached_hidden_items.push(`task${taskId}`);
+        this.requestUpdate();
+        this._hass.callService("grocy", "complete_task", {
+            task_id: taskId
+        });
+        this._showTrackedToast(taskName);
+    }
 	
 	async _confirmDialog(title, message) {
 	  return new Promise((resolve) => {

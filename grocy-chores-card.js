@@ -842,9 +842,7 @@ class GrocyChoresCard extends LitElement {
 			// Cancel button
 			const cancelBtn = document.createElement('ha-button');
 			cancelBtn.textContent = this._translate("Cancel");
-			cancelBtn.setAttribute('raised', ''); // kan ook outlined of appearance="secondary" 
-			cancelBtn.style.backgroundColor = "var(--secondary-background-color)"; // extra kleur
-			cancelBtn.style.color = "var(--primary-text-color)";
+			cancelBtn.setAttribute('appearance', 'secondary'); // <-- zorgt voor grijze kleur
 			cancelBtn.addEventListener('click', () => {
 				dialog.open = false;
 				resolve(null);

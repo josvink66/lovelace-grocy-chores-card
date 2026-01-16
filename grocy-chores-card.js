@@ -840,51 +840,56 @@ class GrocyChoresCard extends LitElement {
     }
 	
 	async _confirmDialog(title, message) {
-		return new Promise((resolve) => {
-			// Create dialog element
-			const dialog = document.createElement('ha-dialog');
-			dialog.heading = title;
+	  return new Promise((resolve) => {
+		const dialog = document.createElement("ha-dialog");
+		dialog.open = true;
 
-			// Add some padding & max-width for nicer look
-			const content = document.createElement('div');
-			content.style.padding = "16px";
-			content.style.maxWidth = "400px";
-			content.style.lineHeight = "1.5";
-			content.innerHTML = `<p>${message}</p>`;
-			dialog.appendChild(content);
+		dialog.style.setProperty("--mdc-dialog-min-width", "400px");
+		dialog.style.setProperty("--mdc-dialog-max-width", "560px");
 
-			// Primary (Yes) button
-			const yesButton = document.createElement('ha-button');
-			yesButton.slot = 'primaryAction';
-			yesButton.setAttribute('raised', '');
-			yesButton.textContent = this._translate("Yes");
-			yesButton.addEventListener('click', () => {
-				dialog.open = false;
-				resolve(true);
-			});
+		/* Header */
+		const header = document.createElement("ha-dialog-header");
+		header.innerHTML = `
+		  <span slot="title">${title}</span>
+		`;
+		dialog.appendChild(header);
 
-			// Secondary (No) button
-			const noButton = document.createElement('ha-button');
-			noButton.slot = 'secondaryAction';
-			noButton.setAttribute('outlined', '');
-			noButton.textContent = this._translate("No");
-			noButton.addEventListener('click', () => {
-				dialog.open = false;
-				resolve(false);
-			});
+		/* Content */
+		const content = document.createElement("div");
+		content.style.padding = "16px 24px 0 24px";
+		content.style.color = "var(--primary-text-color)";
+		content.innerHTML = `<p style="margin:0;">${message}</p>`;
+		dialog.appendChild(content);
 
-			dialog.appendChild(yesButton);
-			dialog.appendChild(noButton);
-
-			dialog.addEventListener('closed', () => {
-				dialog.remove();
-			});
-
-			// Append to body
-			document.body.appendChild(dialog);
-			dialog.open = true;
+		/* Buttons */
+		const cancelButton = document.createElement("ha-button");
+		cancelButton.slot = "primaryAction";
+		cancelButton.setAttribute("appearance", "plain");
+		cancelButton.textContent = this._translate("No");
+		cancelButton.addEventListener("click", () => {
+		  dialog.open = false;
+		  resolve(false);
 		});
+
+		const confirmButton = document.createElement("ha-button");
+		confirmButton.slot = "primaryAction";
+		confirmButton.setAttribute("appearance", "accent");
+		confirmButton.setAttribute("dialogInitialFocus", "");
+		confirmButton.textContent = this._translate("Yes");
+		confirmButton.addEventListener("click", () => {
+		  dialog.open = false;
+		  resolve(true);
+		});
+
+		dialog.appendChild(cancelButton);
+		dialog.appendChild(confirmButton);
+
+		dialog.addEventListener("closed", () => dialog.remove());
+
+		document.body.appendChild(dialog);
+	  });
 	}
+
 
     async _openRescheduleDialog(item) {
         await this.loadRescheduleElements();

@@ -821,7 +821,7 @@ class GrocyChoresCard extends LitElement {
 			const container = document.createElement('div');
 			container.style.display = "flex";
 			container.style.flexDirection = "column"; // verticale stapeling
-			container.style.gap = "12px"; // <-- hier zit de ruimte tussen
+			container.style.gap = "25px"; // <-- hier zit de ruimte tussen
 			container.style.marginTop = "16px";
 
 			// Voeg een button per gebruiker toe

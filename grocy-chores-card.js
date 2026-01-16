@@ -2,6 +2,8 @@ import {html, LitElement, nothing} from "lit";
 import {DateTime} from "luxon";
 import style from './style.js';
 
+console.log("Grocy Chores Card loaded");
+
 class GrocyChoresCard extends LitElement {
 
     async loadCustomCreateTaskElements() {

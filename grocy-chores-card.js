@@ -813,46 +813,45 @@ class GrocyChoresCard extends LitElement {
     }
 	
 	async _selectUserDialog() {
-	  const users = Object.entries(this.userId ?? {})
-		.filter(([key]) => key !== "default");
+		return new Promise((resolve) => {
+			const dialog = document.createElement('ha-dialog');
+			dialog.heading = this._translate("Who completed this chore?");
+			
+			// Container voor buttons
+			const container = document.createElement('div');
+			container.style.display = "flex";
+			container.style.flexDirection = "column"; // verticale stapeling
+			container.style.gap = "12px"; // <-- hier zit de ruimte tussen
+			container.style.marginTop = "16px";
 
-	  if (!users.length) {
-		return this._getUserId();
-	  }
+			// Voeg een button per gebruiker toe
+			const users = this.config.users || [{ id: 1, name: "Default User" }]; 
+			users.forEach(user => {
+				const btn = document.createElement('ha-button');
+				btn.textContent = user.name;
+				btn.setAttribute('raised', '');
+				btn.addEventListener('click', () => {
+					dialog.open = false;
+					resolve(user.id);
+				});
+				container.appendChild(btn);
+			});
 
-	  return new Promise((resolve) => {
-		const dialog = document.createElement("ha-dialog");
-		dialog.open = true;
+			// Voeg een cancel button toe
+			const cancelBtn = document.createElement('ha-button');
+			cancelBtn.textContent = this._translate("Cancel");
+			cancelBtn.setAttribute('outlined', '');
+			cancelBtn.addEventListener('click', () => {
+				dialog.open = false;
+				resolve(null);
+			});
+			container.appendChild(cancelBtn);
 
-		const header = document.createElement("ha-dialog-header");
-		header.innerHTML = `<span slot="title">${this._translate("Who completed this?")}</span>`;
-		dialog.appendChild(header);
-
-		const content = document.createElement("div");
-		content.style.padding = "8px 24px";
-
-		users.forEach(([name, id]) => {
-		  const btn = document.createElement("ha-button");
-		  btn.style.display = "block";
-		  btn.style.width = "100%";
-		  btn.style.textAlign = "left";
-		  btn.textContent = name;
-		  btn.addEventListener("click", () => {
-			dialog.open = false;
-			resolve(id);
-		  });
-		  content.appendChild(btn);
+			dialog.appendChild(container);
+			dialog.addEventListener('closed', () => dialog.remove());
+			document.body.appendChild(dialog);
+			dialog.open = true;
 		});
-
-		dialog.appendChild(content);
-
-		dialog.addEventListener("closed", () => {
-		  dialog.remove();
-		  resolve(null);
-		});
-
-		document.body.appendChild(dialog);
-	  });
 	}
 
     _trackChore(item, overrideUserId = null) {

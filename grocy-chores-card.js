@@ -816,28 +816,30 @@ class GrocyChoresCard extends LitElement {
 		return new Promise((resolve) => {
 			const dialog = document.createElement('ha-dialog');
 			dialog.heading = this._translate("Who completed this chore?");
-			
+
 			// Container voor buttons
 			const container = document.createElement('div');
 			container.style.display = "flex";
-			container.style.flexDirection = "column"; // verticale stapeling
-			container.style.gap = "25px"; // <-- hier zit de ruimte tussen
+			container.style.flexDirection = "column";
+			container.style.gap = "12px"; // ruimte tussen buttons
 			container.style.marginTop = "16px";
 
-			// Voeg een button per gebruiker toe
-			const users = this.config.users || [{ id: 1, name: "Default User" }]; 
-			users.forEach(user => {
+			// Haal de users uit de kaartconfig, behalve "default"
+			const users = Object.entries(this.userId ?? {})
+				.filter(([key]) => key !== "default");
+
+			users.forEach(([name, id]) => {
 				const btn = document.createElement('ha-button');
-				btn.textContent = user.name;
+				btn.textContent = name;
 				btn.setAttribute('raised', '');
 				btn.addEventListener('click', () => {
 					dialog.open = false;
-					resolve(user.id);
+					resolve(id);
 				});
 				container.appendChild(btn);
 			});
 
-			// Voeg een cancel button toe
+			// Cancel button
 			const cancelBtn = document.createElement('ha-button');
 			cancelBtn.textContent = this._translate("Cancel");
 			cancelBtn.setAttribute('outlined', '');

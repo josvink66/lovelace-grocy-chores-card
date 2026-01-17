@@ -264,6 +264,7 @@ class GrocyChoresCard extends LitElement {
                     ${this.overflow && this.overflow.length > 0 ? this._renderOverflow() : nothing}
                 </ha-card>`}
             ${this.show_enable_reschedule ? this._renderRescheduleDialog() : nothing}
+			${this.confirm_track ? this._renderConfirmDialog() : nothing}
         `;
     }
 
@@ -469,19 +470,14 @@ class GrocyChoresCard extends LitElement {
 	}
 	
 	async _confirmAndTrackChore(item) {
-		if (!this.confirm_track) {
-			this._trackChore(item);
-			return;
+	  if (this.confirm_track) {
+		const confirmed = await this._openConfirmDialog(item);
+		if (!confirmed) {
+		  return;
 		}
+	  }
 
-		const result = await this._confirmDialog(
-			this._translate("Confirm"),
-			this._translate("Are you sure you want to track this chore?")
-		);
-
-		if (result) {
-			this._trackChore(item);
-		}
+	  this._trackChore(item);
 	}
 
 	async _confirmAndTrackTask(item) {
@@ -901,51 +897,25 @@ class GrocyChoresCard extends LitElement {
         this._showTrackedToast(taskName);
     }
 	
-	async _confirmDialog(title, message) {
+	async _openConfirmDialog(item) {
 	  return new Promise((resolve) => {
-		const dialog = document.createElement("ha-dialog");
-		dialog.open = true;
-
-		dialog.style.setProperty("--mdc-dialog-min-width", "400px");
-		dialog.style.setProperty("--mdc-dialog-max-width", "560px");
-
-		/* Header */
-		const header = document.createElement("ha-dialog-header");
-		header.innerHTML = `<span slot="title">${title}</span>`;
-		dialog.appendChild(header);
-
-		/* Content */
-		const content = document.createElement("div");
-		content.style.padding = "16px 24px 16px 24px";
-		content.style.display = "flex";
-		content.style.flexDirection = "column";
-		content.style.gap = "12px";
-		content.style.color = "var(--primary-text-color)";
-		content.innerHTML = `<p style="margin:0;">${message}</p>`;
-		dialog.appendChild(content);
-
-		/* Buttons */
-		const confirmButton = document.createElement("ha-button");
-		confirmButton.textContent = this._translate("Yes");
-		confirmButton.setAttribute("appearance", "accent");
-		confirmButton.addEventListener("click", () => {
-		  dialog.open = false;
-		  resolve(true);
-		});
-		content.appendChild(confirmButton);
-
-		const cancelButton = document.createElement("ha-button");
-		cancelButton.textContent = this._translate("No");
-		cancelButton.setAttribute("appearance", "plain");
-		cancelButton.addEventListener("click", () => {
-		  dialog.open = false;
-		  resolve(false);
-		});
-		content.appendChild(cancelButton);
-
-		dialog.addEventListener("closed", () => dialog.remove());
-		document.body.appendChild(dialog);
+		this._confirmItem = item;
+		this._confirmResolve = resolve;
+		this._confirmDialogOpen = true;
+		this.requestUpdate();
 	  });
+	}
+	
+	_closeConfirmDialog(result) {
+	  this._confirmDialogOpen = false;
+
+	  if (this._confirmResolve) {
+		this._confirmResolve(result);
+	  }
+
+	  this._confirmResolve = null;
+	  this._confirmItem = null;
+	  this.requestUpdate();
 	}
 
     async _openRescheduleDialog(item) {
@@ -1234,6 +1204,51 @@ class GrocyChoresCard extends LitElement {
             </ha-dialog>
         `;
     }
+	
+	_renderConfirmDialog() {
+	  if (!this._confirmDialogOpen || !this._confirmItem) {
+		return nothing;
+	  }
+
+	  const isChore = this._confirmItem.__type === "chore";
+	  const heading = isChore
+		? this._translate("Confirm Chore")
+		: this._translate("Confirm Task");
+
+	  const message = isChore
+		? this._translate("Are you sure you want to track this chore?")
+		: this._translate("Are you sure you want to track this task?");
+
+	  return html`
+		<ha-dialog
+		  open
+		  .heading=${heading}
+		  @closed=${() => this._closeConfirmDialog(false)}
+		>
+		  <div style="padding: 16px 24px; color: var(--primary-text-color);">
+			<p style="margin: 0;">${message}</p>
+		  </div>
+
+		  <ha-button
+			slot="secondaryAction"
+			outlined
+			@click=${() => this._closeConfirmDialog(false)}
+		  >
+			${this._translate("No")}
+		  </ha-button>
+
+		  <ha-button
+			slot="primaryAction"
+			raised
+			dialogInitialFocus
+			@click=${() => this._closeConfirmDialog(true)}
+		  >
+			${this._translate("Yes")}
+		  </ha-button>
+		</ha-dialog>
+	  `;
+	}
+
 
     async _skipItem(item) {
         try {
@@ -1561,6 +1576,9 @@ class GrocyChoresCard extends LitElement {
         this._rescheduleItem = null;
         this._rescheduleDate = null;
         this._rescheduleTime = null;
+		this._confirmDialogOpen = false;
+		this._confirmItem = null;
+		this._confirmResolve = null;
     }
 
     getCardSize() {

@@ -503,7 +503,7 @@ class GrocyChoresCard extends LitElement {
         if (icon != null) {
             return html`
                 <mwc-icon-button class="reschedule-button"
-                                 .label=${this._translate("Reschedule")}
+                                 .label=${this._translate("Reschedule1")}
                                  @click=${() => this._openRescheduleDialog(item)}>
                     <ha-icon class="reschedule-button-icon" style="--mdc-icon-size: ${this.chore_icon_size}px;"
                              .icon=${icon}></ha-icon>

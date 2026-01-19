@@ -264,6 +264,7 @@ class GrocyChoresCard extends LitElement {
                     ${this.overflow && this.overflow.length > 0 ? this._renderOverflow() : nothing}
                 </ha-card>`}
             ${this.show_enable_reschedule ? this._renderRescheduleDialog() : nothing}
+			${this._renderConfirmDialog()}
         `;
     }
 
@@ -902,50 +903,58 @@ class GrocyChoresCard extends LitElement {
     }
 	
 	async _confirmDialog(title, message) {
-	  return new Promise((resolve) => {
-		const dialog = document.createElement("ha-dialog");
-		dialog.open = true;
+		return new Promise((resolve) => {
+			// Maak een tijdelijke property om dialog state te tracken
+			this._confirmDialogOpen = true;
+			this._confirmDialogTitle = title;
+			this._confirmDialogMessage = message;
+			this._confirmDialogResolve = resolve;
 
-		dialog.style.setProperty("--mdc-dialog-min-width", "400px");
-		dialog.style.setProperty("--mdc-dialog-max-width", "560px");
-
-		/* Header */
-		const header = document.createElement("ha-dialog-header");
-		header.innerHTML = `<span slot="title">${title}</span>`;
-		dialog.appendChild(header);
-
-		/* Content */
-		const content = document.createElement("div");
-		content.style.padding = "16px 24px 16px 24px";
-		content.style.display = "flex";
-		content.style.flexDirection = "column";
-		content.style.gap = "12px";
-		content.style.color = "var(--primary-text-color)";
-		content.innerHTML = `<p style="margin:0;">${message}</p>`;
-		dialog.appendChild(content);
-
-		/* Buttons */
-		const confirmButton = document.createElement("ha-button");
-		confirmButton.textContent = this._translate("Yes");
-		confirmButton.setAttribute("appearance", "accent");
-		confirmButton.addEventListener("click", () => {
-		  dialog.open = false;
-		  resolve(true);
+			// Force update zodat de dialog wordt gerenderd
+			this.requestUpdate();
 		});
-		content.appendChild(confirmButton);
+	}
+	
+	_renderConfirmDialog() {
+		if (!this._confirmDialogOpen) {
+			return nothing;
+		}
 
-		const cancelButton = document.createElement("ha-button");
-		cancelButton.textContent = this._translate("No");
-		cancelButton.setAttribute("appearance", "plain");
-		cancelButton.addEventListener("click", () => {
-		  dialog.open = false;
-		  resolve(false);
-		});
-		content.appendChild(cancelButton);
+		return html`
+			<ha-dialog
+				open
+				.heading=${this._confirmDialogTitle}
+				@closed=${() => {
+					this._confirmDialogOpen = false;
+					this.requestUpdate();
+				}}>
+				<div style="padding: 16px 24px; color: var(--primary-text-color);">
+					<p style="margin: 0;">${this._confirmDialogMessage}</p>
+				</div>
 
-		dialog.addEventListener("closed", () => dialog.remove());
-		document.body.appendChild(dialog);
-	  });
+				<ha-button
+					slot="primaryAction"
+					raised
+					@click=${() => {
+						this._confirmDialogOpen = false;
+						this.requestUpdate();
+						this._confirmDialogResolve(true);
+					}}>
+					${this._translate("Yes")}
+				</ha-button>
+
+				<ha-button
+					slot="secondaryAction"
+					outlined
+					@click=${() => {
+						this._confirmDialogOpen = false;
+						this.requestUpdate();
+						this._confirmDialogResolve(false);
+					}}>
+					${this._translate("No")}
+				</ha-button>
+			</ha-dialog>
+		`;
 	}
 
     async _openRescheduleDialog(item) {

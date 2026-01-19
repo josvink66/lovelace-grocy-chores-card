@@ -265,6 +265,7 @@ class GrocyChoresCard extends LitElement {
                 </ha-card>`}
             ${this.show_enable_reschedule ? this._renderRescheduleDialog() : nothing}
 			${this._renderConfirmDialog()}
+			${this._renderSelectUserDialog()}
         `;
     }
 
@@ -876,11 +877,11 @@ class GrocyChoresCard extends LitElement {
 
 		let userId;
 
-		// 1️⃣ Long-press override has priority
+		// Long-press override has priority
 		if (overrideUserId !== null) {
 			userId = overrideUserId;
 		}
-		// 2️⃣ Existing filter_user logic (unchanged)
+		// Existing filter_user logic (unchanged)
 		else if (this.filter_user !== undefined && this._isUnassigned(item)) {
 			if (!Array.isArray(this.filter_user)) {
 				userId = this.filter_user === "current"
@@ -890,7 +891,7 @@ class GrocyChoresCard extends LitElement {
 				userId = this._getUserId();
 			}
 		}
-		// 3️⃣ Default behavior
+		// Default behavior
 		else {
 			userId = this._getUserId();
 		}

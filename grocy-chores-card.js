@@ -463,7 +463,7 @@ class GrocyChoresCard extends LitElement {
 	async _selectAndTrackChore(ev, item) {
 	  ev.preventDefault();
 
-	  const userId = await this._selectUserDialog();
+	  const userId = await this._openSelectUserDialog();
 	  if (!userId) return;
 
 	  this._trackChore(item, userId);
@@ -475,7 +475,7 @@ class GrocyChoresCard extends LitElement {
 			return;
 		}
 
-		const result = await this._confirmDialog(
+		const result = await this._OpenConfirmDialog(
 			this._translate("Confirm"),
 			this._translate("Are you sure you want to track this chore?")
 		);
@@ -491,7 +491,7 @@ class GrocyChoresCard extends LitElement {
 			return;
 		}
 
-		const result = await this._confirmDialog(
+		const result = await this._OpenConfirmDialog(
 			this._translate("Confirm"),
 			this._translate("Are you sure you want to track this task?")
 		);
@@ -813,48 +813,60 @@ class GrocyChoresCard extends LitElement {
         }
     }
 	
-	async _selectUserDialog() {
+	async _OpenSelectUserDialog() {
 		return new Promise((resolve) => {
-			const dialog = document.createElement('ha-dialog');
-			dialog.heading = this._translate("Who completed this chore?");
+			// State properties voor dialog
+			this._selectUserDialogOpen = true;
+			this._selectUserDialogResolve = resolve;
 
-			// Container voor buttons
-			const container = document.createElement('div');
-			container.style.display = "flex";
-			container.style.flexDirection = "column";
-			container.style.gap = "12px"; // ruimte tussen buttons
-			container.style.marginTop = "16px";
-
-			// Haal de users uit de kaartconfig, behalve "default"
-			const users = Object.entries(this.userId ?? {}).filter(([key]) => key !== "default");
-
-			// Voeg een button per gebruiker toe
-			users.forEach(([name, id]) => {
-				const btn = document.createElement('ha-button');
-				btn.textContent = name;
-				btn.setAttribute('raised', ''); // primary style
-				btn.addEventListener('click', () => {
-					dialog.open = false;
-					resolve(id);
-				});
-				container.appendChild(btn);
-			});
-
-			// Cancel button
-			const cancelBtn = document.createElement('ha-button');
-			cancelBtn.textContent = this._translate("Cancel");
-			cancelBtn.setAttribute('appearance', 'secondary'); // <-- zorgt voor grijze kleur
-			cancelBtn.addEventListener('click', () => {
-				dialog.open = false;
-				resolve(null);
-			});
-			container.appendChild(cancelBtn);
-
-			dialog.appendChild(container);
-			dialog.addEventListener('closed', () => dialog.remove());
-			document.body.appendChild(dialog);
-			dialog.open = true;
+			// Forceer render zodat de dialog verschijnt
+			this.requestUpdate();
 		});
+	}
+
+	_renderSelectUserDialog() {
+		if (!this._selectUserDialogOpen) {
+			return nothing;
+		}
+
+		// Haal de users uit de kaartconfig, behalve "default"
+		const users = Object.entries(this.userId ?? {}).filter(([key]) => key !== "default");
+
+		return html`
+			<ha-dialog
+				open
+				.heading=${this._translate("Who completed this chore?")}
+				@closed=${() => {
+					this._selectUserDialogOpen = false;
+					this.requestUpdate();
+				}}>
+				
+				<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+					${users.map(([name, id]) => html`
+						<ha-button
+							raised
+							@click=${() => {
+								this._selectUserDialogOpen = false;
+								this.requestUpdate();
+								this._selectUserDialogResolve(id);
+							}}>
+							${name}
+						</ha-button>
+					`)}
+
+					<ha-button
+						slot="secondaryAction"
+						outlined
+						@click=${() => {
+							this._selectUserDialogOpen = false;
+							this.requestUpdate();
+							this._selectUserDialogResolve(null);
+						}}>
+						${this._translate("Cancel")}
+					</ha-button>
+				</div>
+			</ha-dialog>
+		`;
 	}
 
     _trackChore(item, overrideUserId = null) {
@@ -902,7 +914,7 @@ class GrocyChoresCard extends LitElement {
         this._showTrackedToast(taskName);
     }
 	
-	async _confirmDialog(title, message) {
+	async _OpenConfirmDialog(title, message) {
 		return new Promise((resolve) => {
 			// Maak een tijdelijke property om dialog state te tracken
 			this._confirmDialogOpen = true;

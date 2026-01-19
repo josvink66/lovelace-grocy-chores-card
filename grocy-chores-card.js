@@ -461,6 +461,27 @@ class GrocyChoresCard extends LitElement {
 	  `;
 	}
 	
+	_renderTrackTaskButton(item) {
+		if (this.task_icon != null) {
+			return html`
+				<mwc-icon-button
+					@click=${() => this._confirmAndTrackTask(item)}
+					@contextmenu=${(e) => this._selectAndTrackChore(e, item)}
+				>
+					<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
+				</mwc-icon-button>
+			`;
+		}
+		return html`
+			<mwc-button
+				@click=${() => this._confirmAndTrackTask(item)}
+				@contextmenu=${(e) => this._selectAndTrackChore(e, item)}
+			>
+				${this._translate("Track")}
+			</mwc-button>
+		`;
+	}
+	
 	async _selectAndTrackChore(ev, item) {
 	  ev.preventDefault();
 
@@ -547,17 +568,6 @@ class GrocyChoresCard extends LitElement {
             </mwc-button>
         `
     }
-
-    _renderTrackTaskButton(item) {
-		if (this.task_icon != null) {
-			return html`
-				<mwc-icon-button @click=${() => this._confirmAndTrackTask(item)}>
-					<ha-icon .icon=${this.task_icon} style="--mdc-icon-size: ${this.task_icon_size}px;"></ha-icon>
-				</mwc-icon-button>
-			`;
-		}
-		return html`<mwc-button @click=${() => this._confirmAndTrackTask(item)}>${this._translate("Track")}</mwc-button>`;
-	}
 
     _calculateDaysTillNow(date) {
         const now = DateTime.now();

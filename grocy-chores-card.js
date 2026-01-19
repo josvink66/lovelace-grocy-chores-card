@@ -854,6 +854,9 @@ class GrocyChoresCard extends LitElement {
 							${name}
 						</ha-button>
 					`)}
+					
+					<!-- Extra ruimte / scheiding -->
+					<div style="height: 16px;"></div>
 
 					<ha-button
 						slot="secondaryAction"

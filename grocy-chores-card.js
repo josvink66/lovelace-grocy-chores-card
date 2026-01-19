@@ -813,7 +813,7 @@ class GrocyChoresCard extends LitElement {
         }
     }
 	
-	async _OpenSelectUserDialog() {
+	async _openSelectUserDialog() {
 		return new Promise((resolve) => {
 			// State properties voor dialog
 			this._selectUserDialogOpen = true;
